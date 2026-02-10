@@ -7,9 +7,9 @@ export const errorHandler = (
   res: Response,
   next: NextFunction,
 ) => {
-  logger.error(`${req.method} ${req.url} - ${err.message}`);
+  logger.error(`Error on ${req.method} ${req.originalUrl}: ${err.message}`);
 
-  res.status(500).json({
-    message: err.message || "Server error",
+  res.status(err.status || 500).json({
+    message: err.message || "Internal server error",
   });
 };

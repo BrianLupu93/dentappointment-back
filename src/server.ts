@@ -1,3 +1,4 @@
+import "./utils/generateSecret";
 import dotenv from "dotenv";
 dotenv.config();
 
