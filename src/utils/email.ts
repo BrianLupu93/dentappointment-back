@@ -1,4 +1,4 @@
-import Brevo from "@getbrevo/brevo";
+import * as Brevo from "@getbrevo/brevo";
 import { logger } from "./logger";
 
 const apiInstance = new Brevo.TransactionalEmailsApi();
@@ -7,6 +7,7 @@ apiInstance.setApiKey(
   process.env.BREVO_API_KEY as string,
 );
 
+// ----------------------- SEND EMAIL ---------------------------
 export const sendEmail = async (to: string, subject: string, html: string) => {
   try {
     const email = {
@@ -23,4 +24,43 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
     logger.error(`Email sending failed: ${err.message}`);
     throw new Error("Email sending failed");
   }
+};
+// ----------------------- EMAIL TEMPLATE ---------------------------
+export const appointmentConfirmationTemplate = ({
+  fullName,
+  date,
+  startTime,
+  endTime,
+  serviceName,
+  phoneNumber,
+}: {
+  fullName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  serviceName: string;
+  phoneNumber: string;
+}) => {
+  return `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+      <h2>Appointment Confirmation</h2>
+
+      <p>Hello <strong>${fullName}</strong>,</p>
+
+      <p>Your appointment has been successfully scheduled. Here are the details:</p>
+
+      <h3>Appointment Details</h3>
+      <ul>
+        <li><strong>Date:</strong> ${date}</li>
+        <li><strong>Start Time:</strong> ${startTime}</li>
+        <li><strong>End Time:</strong> ${endTime}</li>
+        <li><strong>Service:</strong> ${serviceName}</li>
+      </ul>
+
+      <p>If you need to cancel or reschedule your appointment, please call us at:</p>
+      <p><strong>${phoneNumber}</strong></p>
+
+      <p>Thank you for choosing our DentAppointment!</p>
+    </div>
+  `;
 };

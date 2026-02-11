@@ -2,6 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { calculateEndTime } from "../utils/calculateEndTime";
 import Appointment from "../models/appointment.model";
 import { logger } from "../utils/logger";
+import { appointmentConfirmationTemplate, sendEmail } from "../utils/email";
 
 // --------------------- CREATE APPOINTMENT -------------------------
 export const createAppointment = asyncHandler(async (req, res) => {
@@ -26,6 +27,25 @@ export const createAppointment = asyncHandler(async (req, res) => {
   logger.info(
     `Appointment created for ${clientInfo.fullName} on ${date} at ${startTime} - ${endTime}`,
   );
+
+  const html = appointmentConfirmationTemplate({
+    fullName: appointment.clientInfo.fullName,
+    date: appointment.date,
+    startTime: appointment.startTime,
+    endTime: appointment.endTime,
+    serviceName: appointment.service.name,
+    phoneNumber: process.env.SALON_PHONE || "+40 700 000 000",
+  });
+
+  try {
+    await sendEmail(
+      appointment.clientInfo.email,
+      "Your Appointment Confirmation",
+      html,
+    );
+  } catch (err) {
+    console.error("Email sending failed:", err);
+  }
 
   res.status(201).json(appointment);
 });
