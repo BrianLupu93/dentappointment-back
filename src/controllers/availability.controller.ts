@@ -5,6 +5,7 @@ import { addMinutes, timeToMinutes } from "../utils/time";
 import { logger } from "../utils/logger";
 
 //  ------------------- GET MONTH AVAILABILITY -----------------------
+
 export const getMonthlyAvailability = asyncHandler(async (req, res) => {
   const startDate = req.query.startDate as string; // dd-mm-yyyy
 
@@ -15,7 +16,7 @@ export const getMonthlyAvailability = asyncHandler(async (req, res) => {
   const [day, month, year] = startDate.split("-").map(Number);
   const start = new Date(year, month - 1, day);
 
-  // Shortest Service
+  // Get the shortest Service
   const shortestService = await Service.findOne().sort({ duration: 1 });
   if (!shortestService) {
     return res.status(500).json({ message: "No services found" });
@@ -23,13 +24,13 @@ export const getMonthlyAvailability = asyncHandler(async (req, res) => {
 
   const duration = shortestService.duration;
 
-  // Last Day of the month
+  // Last day of the month
   const end = new Date(year, month, 0).getDate();
 
   const results: { date: string; full: boolean }[] = [];
 
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // normalize
+  today.setHours(0, 0, 0, 0);
 
   for (let d = 1; d <= end; d++) {
     const current = new Date(year, month - 1, d);
@@ -38,16 +39,16 @@ export const getMonthlyAvailability = asyncHandler(async (req, res) => {
     const weekday = current.getDay(); // 0=Sun, 6=Sat
     const formatted = `${String(d).padStart(2, "0")}-${String(month).padStart(2, "0")}-${year}`;
 
-    // ❗ Mark weekend OR past days as full
+    // Is weekend or past days
     if (weekday === 0 || weekday === 6 || current < today) {
       results.push({ date: formatted, full: true });
       continue;
     }
 
-    // The Day appointments
+    // Appointments for the day
     const appointments = await Appointment.find({ date: formatted });
 
-    // Possible Slots
+    // Possible slots
     const slots: string[] = [];
 
     const generateSlots = (start: string, end: string) => {
@@ -58,8 +59,28 @@ export const getMonthlyAvailability = asyncHandler(async (req, res) => {
       }
     };
 
-    generateSlots("08-00", "12-00");
-    generateSlots("13-00", "17-00");
+    // TODO: Move to the DB and implement front
+    generateSlots("08:00", "12:00");
+    generateSlots("13:00", "17:00");
+
+    // Remove past slots if the day is today
+    if (current.getTime() === today.getTime()) {
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+      const firstFutureIndex = slots.findIndex(
+        (s) => timeToMinutes(s) > nowMinutes,
+      );
+
+      if (firstFutureIndex === -1) {
+        // all slots are in the past then set the day full
+        results.push({ date: formatted, full: true });
+        continue;
+      }
+
+      // keep only future slots
+      slots.splice(0, firstFutureIndex);
+    }
 
     let dayFull = true;
 
@@ -84,23 +105,21 @@ export const getMonthlyAvailability = asyncHandler(async (req, res) => {
     results.push({ date: formatted, full: dayFull });
   }
 
-  console.log(results);
   logger.info(`Monthly availability calculated from ${startDate}`);
-
   res.json(results);
 });
 
 //  ------------------- GET DAILLY AVAILABILITY -----------------------
 
 export const getDailyAvailability = asyncHandler(async (req, res) => {
-  const date = req.query.date as string; // dd-mm-yyyy
+  const date = req.query.date as string;
   const serviceId = req.query.serviceId as string;
 
   if (!date || !serviceId) {
     return res.status(400).json({ message: "date and serviceId are required" });
   }
 
-  // 1. Find selected service
+  // 1. Selected service
   const service = await Service.findById(serviceId);
   if (!service) {
     return res.status(404).json({ message: "Service not found" });
@@ -108,43 +127,60 @@ export const getDailyAvailability = asyncHandler(async (req, res) => {
 
   const duration = service.duration;
 
-  // 2. Get all appointments for that day
+  // 2. Get the shortest service
+  const minService = await Service.findOne().sort({ duration: 1 });
+  if (!minService) {
+    return res.status(404).json({ message: "Service not found" });
+  }
+  const MIN_SERVICE = minService.duration;
+
+  // 3. Appointments for that day
   const appointments = await Appointment.find({ date });
 
-  // 3. Generate all possible slots
-  const slots: string[] = [];
+  // 4. Working hours
+  //   TODO: Move to the DB and implement front
+  const workingHours = [
+    { start: "08:00", end: "12:00" },
+    { start: "13:00", end: "17:00" },
+  ];
+
+  // 5. Generate candidate slots every MIN_SERVICE minutes
+  const candidateSlots: string[] = [];
 
   const generateSlots = (start: string, end: string) => {
     let t = start;
+
     while (timeToMinutes(t) + duration <= timeToMinutes(end)) {
-      slots.push(t);
-      t = addMinutes(t, duration);
+      candidateSlots.push(t);
+      t = addMinutes(t, MIN_SERVICE);
     }
   };
 
-  generateSlots("08-00", "12-00");
-  generateSlots("13-00", "17-00");
+  workingHours.forEach(({ start, end }) => generateSlots(start, end));
 
-  // 4. Filter out slots that overlap with existing appointments
-  const availableSlots = slots.filter((slot) => {
-    const slotEnd = addMinutes(slot, duration);
+  // 6. Filter valid slots
+  const availableSlots = candidateSlots.filter((slot) => {
+    const slotStart = timeToMinutes(slot);
+    const slotEnd = slotStart + duration;
 
-    const sStart = timeToMinutes(slot);
-    const sEnd = timeToMinutes(slotEnd);
+    // must fit inside working hours
+    const fitsInWorkingHours = workingHours.some(({ start, end }) => {
+      return slotStart >= timeToMinutes(start) && slotEnd <= timeToMinutes(end);
+    });
 
+    if (!fitsInWorkingHours) return false;
+
+    // must not overlap existing appointments
     const overlaps = appointments.some((a) => {
       const apStart = timeToMinutes(a.startTime);
       const apEnd = timeToMinutes(a.endTime);
-
-      return !(sEnd <= apStart || sStart >= apEnd);
+      return !(slotEnd <= apStart || slotStart >= apEnd);
     });
 
-    return !overlaps;
-  });
+    if (overlaps) return false;
 
-  logger.info(
-    `Daily availability calculated for ${date} and service ${serviceId}`,
-  );
+    return true;
+  });
 
   res.json(availableSlots);
 });
