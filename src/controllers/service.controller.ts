@@ -54,6 +54,8 @@ export const updateService = asyncHandler(async (req, res) => {
 // --------------------- DELETE SERVICE {id} -------------------------
 
 export const deleteService = asyncHandler(async (req, res) => {
+  console.log("======================");
+  console.log(req.params.id);
   const service = await Service.findByIdAndDelete(req.params.id);
 
   if (!service) {

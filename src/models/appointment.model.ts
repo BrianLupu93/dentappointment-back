@@ -16,6 +16,7 @@ export interface IAppointment extends Document {
   date: string; // format 10-05-2026
   startTime: string; // format 08-00
   endTime: string;
+  done: boolean;
 }
 
 const appointmentSchema = new Schema<IAppointment>(
@@ -35,6 +36,7 @@ const appointmentSchema = new Schema<IAppointment>(
     date: { type: String, required: true },
     startTime: { type: String, required: true },
     endTime: { type: String, required: true },
+    done: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

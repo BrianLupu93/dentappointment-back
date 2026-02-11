@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { verifyToken } from "../utils/jwt";
+import { verifyAccessToken } from "../utils/jwt";
 
 export const auth = (req: Request, res: Response, next: NextFunction) => {
   const header = req.headers.authorization;
@@ -11,10 +11,15 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
   const token = header.split(" ")[1];
 
   try {
-    const decoded = verifyToken(token) as { userId: string };
+    const decoded = verifyAccessToken(token) as { userId: string };
     req.userId = decoded.userId;
     next();
-  } catch (err) {
-    return res.status(401).json({ message: "Invalid or expired token" });
+  } catch (err: any) {
+    // If the token expires the front will ask for
+    if (err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Token expired" });
+    }
+
+    return res.status(401).json({ message: "Invalid token" });
   }
 };
