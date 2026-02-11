@@ -40,5 +40,6 @@ const appointmentSchema = new Schema<IAppointment>(
   },
   { timestamps: true },
 );
+appointmentSchema.index({ date: 1, startTime: 1 }, { unique: true });
 
 export default mongoose.model<IAppointment>("Appointment", appointmentSchema);
