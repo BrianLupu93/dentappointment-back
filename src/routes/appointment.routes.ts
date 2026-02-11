@@ -5,12 +5,13 @@ import {
   getAppointments,
   getAppointmentsByDate,
 } from "../controllers/appointment.controller";
+import { auth } from "../middlewares/auth.middlewares";
 
 const router = Router();
 
 router.post("/", createAppointment);
-router.get("/", getAppointments);
+router.get("/", auth, getAppointments);
 router.get("/:date", getAppointmentsByDate);
-router.delete("/:id", deleteAppointment);
+router.delete("/:id", auth, deleteAppointment);
 
 export default router;
