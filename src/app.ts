@@ -11,6 +11,7 @@ import availabilityRoutes from "./routes/availability.routes";
 
 import { errorHandler } from "./middlewares/error.middleware";
 import { requestLogger } from "./middlewares/requestLogger.middleware";
+import "./utils/job";
 
 const app = express();
 
