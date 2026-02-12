@@ -8,6 +8,7 @@ import authRoutes from "./routes/auth.routes";
 import serviceRoutes from "./routes/service.routes";
 import appointmentRoutes from "./routes/appointment.routes";
 import availabilityRoutes from "./routes/availability.routes";
+import inviteRoutes from "./routes/invite.routes";
 
 import { errorHandler } from "./middlewares/error.middleware";
 import { requestLogger } from "./middlewares/requestLogger.middleware";
@@ -33,6 +34,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/availability", availabilityRoutes);
+app.use("/api/auth", inviteRoutes);
 
 app.use(errorHandler);
 
