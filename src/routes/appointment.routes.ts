@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  cancelAppointment,
   createAppointment,
   deleteAppointment,
   getAppointments,
@@ -11,6 +12,7 @@ const router = Router();
 
 router.post("/", createAppointment);
 router.get("/", auth, getAppointments);
+router.get("/cancel", cancelAppointment);
 router.get("/:date", getAppointmentsByDate);
 router.delete("/:id", auth, deleteAppointment);
 

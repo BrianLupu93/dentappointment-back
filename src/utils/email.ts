@@ -33,6 +33,7 @@ export const appointmentConfirmationTemplate = ({
   endTime,
   serviceName,
   phoneNumber,
+  cancelLink,
 }: {
   fullName: string;
   date: string;
@@ -40,6 +41,7 @@ export const appointmentConfirmationTemplate = ({
   endTime: string;
   serviceName: string;
   phoneNumber: string;
+  cancelLink: string;
 }) => {
   return `
     <div style="font-family: Arial, sans-serif; line-height: 1.6;">
@@ -57,7 +59,10 @@ export const appointmentConfirmationTemplate = ({
         <li><strong>Service:</strong> ${serviceName}</li>
       </ul>
 
-      <p>If you need to cancel or reschedule your appointment, please call us at:</p>
+      <p>If you need to cancel your appointment, please access this link:</p>
+      <p><strong>${cancelLink}</strong></p>
+
+      <p>For other information plese fell free to contact us:</p>
       <p><strong>${phoneNumber}</strong></p>
 
       <p>Thank you for choosing our DentAppointment!</p>
