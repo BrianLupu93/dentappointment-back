@@ -12,7 +12,6 @@ export const createInvite = asyncHandler(async (req, res) => {
   await Invite.create({ email, token, expiresAt });
 
   const link = `${process.env.FRONTEND_URL}/register?invite=${token}`;
-  console.log(link);
 
   await sendEmail(
     email,
